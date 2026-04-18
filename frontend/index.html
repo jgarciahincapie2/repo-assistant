@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repo Assistant</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0d0d0f;--surface:#16161a;--surface2:#1e1e24;
+    --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+    --text:#e8e8f0;--muted:#888898;
+    --accent:#7c6af5;--accent2:#5e52d4;--accent-soft:rgba(124,106,245,0.12);
+    --green:#3ddc84;--green-soft:rgba(61,220,132,0.1);
+    --amber:#f5a623;--amber-soft:rgba(245,166,35,0.1);
+    --red:#e55;--red-soft:rgba(238,85,85,0.1);
+    --font:'DM Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace;
+    --r:10px;--r2:16px;
+  }
+  body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;}
+
+  /* LOGIN */
+  #loginScreen{height:100vh;display:flex;align-items:center;justify-content:center;}
+  .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:40px;width:380px;max-width:95vw;}
+  .login-logo{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--accent);margin-bottom:8px;}
+  .login-logo span{color:var(--muted);}
+  .login-subtitle{font-size:13px;color:var(--muted);margin-bottom:28px;}
+  .login-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:7px;display:block;}
+  .login-input{width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border .15s;margin-bottom:16px;}
+  .login-input:focus{border-color:var(--accent);}
+  .login-btn{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-family:var(--font);font-size:14px;font-weight:500;cursor:pointer;transition:background .15s;}
+  .login-btn:hover{background:var(--accent2);}
+  .login-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .login-error{font-size:13px;color:var(--red);margin-top:12px;display:none;}
+  .login-hint{font-size:11px;color:var(--muted);margin-top:16px;line-height:1.5;}
+
+  /* APP */
+  #appScreen{display:none;height:100vh;grid-template-columns:260px 1fr;grid-template-rows:56px 1fr;}
+  #appScreen.visible{display:grid;}
+  header{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;}
+  .logo{font-family:var(--mono);font-size:15px;font-weight:500;color:var(--accent);}
+  .logo span{color:var(--muted);}
+  .header-right{margin-left:auto;display:flex;gap:12px;align-items:center;}
+  .role-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
+  .role-badge.admin{background:rgba(245,166,35,.12);color:#f5a623;}
+  .role-badge.user{background:var(--accent-soft);color:var(--accent);}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);}
+  .status-dot.ready{background:var(--green);box-shadow:0 0 6px var(--green);}
+  .status-dot.working{background:var(--amber);animation:pulse 1.2s infinite;}
+  .status-dot.error{background:var(--red);}
+  #globalStatus{font-size:13px;color:var(--muted);}
+  .logout-btn{padding:5px 12px;border-radius:var(--r);background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--font);transition:all .15s;}
+  .logout-btn:hover{color:var(--text);border-color:var(--border2);}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  nav{background:var(--surface);border-right:1px solid var(--border);padding:16px 0;display:flex;flex-direction:column;overflow-y:auto;}
+  .nav-section{padding:0 8px;margin-bottom:8px;}
+  .nav-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:8px 12px 4px;}
+  .nav-btn{width:100%;padding:9px 12px;border:none;border-radius:var(--r);background:transparent;color:var(--muted);font-family:var(--font);font-size:13.5px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .15s;text-align:left;}
+  .nav-btn:hover{background:var(--surface2);color:var(--text);}
+  .nav-btn.active{background:var(--accent-soft);color:var(--accent);}
+  .nav-btn .icon{font-size:15px;width:18px;text-align:center;}
+  .admin-tag{margin-left:auto;font-size:9px;padding:1px 6px;border-radius:10px;background:rgba(245,166,35,.12);color:#f5a623;font-family:var(--mono);}
+  .nav-btn.hidden{display:none;}
+
+  main{overflow-y:auto;background:var(--bg);}
+  .panel{display:none;height:100%;}
+  .panel.active{display:flex;flex-direction:column;}
+  .panel-inner{padding:32px 36px;max-width:720px;}
+  .panel-title{font-size:22px;font-weight:500;margin-bottom:6px;}
+  .panel-sub{font-size:14px;color:var(--muted);margin-bottom:28px;}
+
+  .form-group{margin-bottom:18px;}
+  .form-label{display:block;font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;}
+  .form-input{width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:13px;transition:border .15s;outline:none;}
+  .form-input:focus{border-color:var(--accent);}
+  .form-input::placeholder{color:var(--muted);}
+  .btn{padding:10px 20px;border:none;border-radius:var(--r);font-family:var(--font);font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:8px;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent2);}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-ghost{background:var(--surface);color:var(--text);border:1px solid var(--border);}
+  .btn-ghost:hover{border-color:var(--border2);background:var(--surface2);}
+  .btn-danger{background:var(--red-soft);color:var(--red);border:1px solid transparent;}
+  .btn-danger:hover{border-color:var(--red);}
+
+  .status-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:20px;margin-top:24px;}
+  .status-card-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .status-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
+  .badge-idle{background:var(--surface2);color:var(--muted);}
+  .badge-cloning,.badge-indexing{background:var(--amber-soft);color:var(--amber);}
+  .badge-ready{background:var(--green-soft);color:var(--green);}
+  .badge-error{background:var(--red-soft);color:var(--red);}
+  .progress-bar{height:4px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:10px;}
+  .progress-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .5s ease;}
+  .progress-fill.done{background:var(--green);}
+  .stat-row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:8px;}
+  .stat-val{color:var(--text);font-family:var(--mono);}
+
+  .tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);padding:4px;border-radius:var(--r);width:fit-content;}
+  .tab-btn{padding:7px 16px;border:none;border-radius:7px;background:transparent;color:var(--muted);font-family:var(--font);font-size:13.5px;cursor:pointer;transition:all .15s;}
+  .tab-btn.active{background:var(--accent-soft);color:var(--accent);}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+
+  .doc-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;transition:border .15s;}
+  .doc-item:hover{border-color:var(--border2);}
+  .doc-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+  .doc-icon.url{background:var(--accent-soft);color:var(--accent);}
+  .doc-icon.file{background:var(--green-soft);color:var(--green);}
+  .doc-info{flex:1;min-width:0;}
+  .doc-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .doc-src{font-size:12px;color:var(--muted);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .doc-status{font-size:11px;padding:2px 8px;border-radius:20px;font-family:var(--mono);text-transform:uppercase;white-space:nowrap;}
+  .st-indexed{background:var(--green-soft);color:var(--green);}
+  .st-indexing{background:var(--amber-soft);color:var(--amber);}
+  .st-pending{background:var(--surface2);color:var(--muted);}
+  .st-error{background:var(--red-soft);color:var(--red);}
+  .upload-zone{border:2px dashed var(--border2);border-radius:var(--r2);padding:48px 24px;text-align:center;cursor:pointer;transition:all .15s;color:var(--muted);margin-bottom:16px;}
+  .upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:var(--accent-soft);color:var(--text);}
+  #fileInput{display:none;}
+
+  .chat-wrapper{display:flex;flex-direction:column;height:100%;}
+  .chat-messages{flex:1;overflow-y:auto;padding:24px 36px;display:flex;flex-direction:column;gap:20px;}
+  .msg{display:flex;gap:14px;max-width:760px;width:100%;}
+  .msg.user{align-self:flex-end;flex-direction:row-reverse;}
+  .msg-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;margin-top:2px;}
+  .msg.user .msg-avatar{background:var(--accent);color:#fff;}
+  .msg.assistant .msg-avatar{background:var(--surface2);color:var(--accent);border:1px solid var(--border);}
+  .msg-body{flex:1;min-width:0;}
+  .msg-bubble{padding:12px 16px;border-radius:var(--r2);font-size:14.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word;}
+  .msg.user .msg-bubble{background:var(--accent);color:#fff;border-radius:var(--r2) 4px var(--r2) var(--r2);}
+  .msg.assistant .msg-bubble{background:var(--surface);border:1px solid var(--border);border-radius:4px var(--r2) var(--r2) var(--r2);}
+  .msg-sources{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;}
+  .source-chip{font-size:11px;font-family:var(--mono);padding:3px 9px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .msg-time{font-size:11px;color:var(--muted);margin-top:5px;padding-left:2px;}
+  .msg.user .msg-time{text-align:right;}
+  .typing-indicator{display:flex;gap:4px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px var(--r2) var(--r2) var(--r2);width:fit-content;}
+  .typing-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:bounce 1.2s infinite;}
+  .typing-dot:nth-child(2){animation-delay:.2s}.typing-dot:nth-child(3){animation-delay:.4s}
+  @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+  .chat-footer{padding:16px 36px 20px;border-top:1px solid var(--border);background:var(--bg);}
+  .chat-input-row{display:flex;gap:10px;align-items:flex-end;background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:10px 14px 10px 16px;transition:border .15s;}
+  .chat-input-row:focus-within{border-color:var(--accent);}
+  #chatInput{flex:1;border:none;background:transparent;color:var(--text);font-family:var(--font);font-size:14.5px;resize:none;outline:none;line-height:1.5;max-height:140px;min-height:24px;}
+  #chatInput::placeholder{color:var(--muted);}
+  .send-btn{width:34px;height:34px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;transition:background .15s,transform .1s;}
+  .send-btn:hover{background:var(--accent2);}
+  .send-btn:active{transform:scale(.95);}
+  .send-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .chat-meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:var(--muted);}
+  .chat-meta select{background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;outline:none;font-family:var(--mono);}
+  .empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted);padding:40px;text-align:center;}
+  .empty-icon{font-size:40px;margin-bottom:8px;}
+  .empty-title{font-size:16px;font-weight:500;color:var(--text);}
+  .empty-sub{font-size:14px;max-width:340px;line-height:1.5;}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:12px 18px;font-size:13.5px;color:var(--text);z-index:999;display:none;animation:slideUp .2s ease;max-width:320px;}
+  .toast.show{display:block;}
+  .toast.success{border-color:var(--green);color:var(--green);}
+  .toast.error{border-color:var(--red);color:var(--red);}
+  @keyframes slideUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">repo<span>assistant</span></div>
+    <div class="login-subtitle">Ingresa tu token de acceso para continuar</div>
+    <label class="login-label">Token de acceso</label>
+    <input type="password" class="login-input" id="tokenInput" placeholder="Introduce tu token..."
+      onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Ingresar</button>
+    <div class="login-error" id="loginError">Token inválido. Verifica e intenta de nuevo.</div>
+    <div class="login-hint">Solicita tu token de acceso al administrador del sistema.</div>
+  </div>
+</div>
+
+<div id="appScreen">
+  <header>
+    <div class="logo">repo<span>assistant</span></div>
+    <div class="header-right">
+      <div class="status-dot" id="globalDot"></div>
+      <span id="globalStatus">Inactivo</span>
+      <span class="role-badge" id="roleBadge">USER</span>
+      <button class="logout-btn" onclick="doLogout()">Salir</button>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-section">
+      <div class="nav-label">Workspace</div>
+      <button class="nav-btn admin-only hidden" onclick="showPanel('repo')" id="nav-repo">
+        <span class="icon">⬡</span> Repositorio <span class="admin-tag">ADMIN</span>
+      </button>
+      <button class="nav-btn admin-only hidden" onclick="showPanel('docs')" id="nav-docs">
+        <span class="icon">◈</span> Documentación <span class="admin-tag">ADMIN</span>
+      </button>
+      <button class="nav-btn" onclick="showPanel('status')" id="nav-status">
+        <span class="icon">◉</span> Estado
+      </button>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Asistente</div>
+      <button class="nav-btn" onclick="showPanel('chat')" id="nav-chat">
+        <span class="icon">◎</span> Chat
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- REPO — admin only -->
+    <div class="panel" id="panel-repo">
+      <div class="panel-inner">
+        <div class="panel-title">Repositorio</div>
+        <div class="panel-sub">Clona e indexa un repositorio Git para habilitar preguntas sobre el código</div>
+        <div class="form-group">
+          <label class="form-label">URL del repositorio</label>
+          <input type="text" class="form-input" id="repoUrl" placeholder="https://github.com/org/repo.git"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ruta local <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0">(opcional)</span></label>
+          <input type="text" class="form-input" id="repoPath" placeholder="./repos/mi-proyecto"/>
+        </div>
+        <button class="btn btn-primary" id="cloneBtn" onclick="startRepoIndexing()">↓ Clonar e Indexar</button>
+        <div class="status-card" id="repoStatusCard" style="display:none">
+          <div class="status-card-header">
+            <span style="font-size:14px;font-weight:500">Estado de indexación</span>
+            <span class="status-badge badge-idle" id="repoBadge">IDLE</span>
+          </div>
+          <div id="repoUrlDisplay" style="font-family:var(--mono);font-size:12px;color:var(--muted);word-break:break-all;margin-bottom:12px"></div>
+          <div class="progress-bar"><div class="progress-fill" id="repoProgress" style="width:0%"></div></div>
+          <div class="stat-row"><span>Chunks indexados</span><span class="stat-val" id="repoChunks">0 / 0</span></div>
+          <div id="repoErrMsg" style="margin-top:10px;font-size:12px;color:var(--red);display:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOCS — admin only -->
+    <div class="panel" id="panel-docs">
+      <div class="panel-inner">
+        <div class="panel-title">Documentación</div>
+        <div class="panel-sub">Agrega páginas de Confluence, URLs o sube archivos</div>
+        <div class="tabs">
+          <button class="tab-btn active" onclick="switchTab('url')">Link / URL</button>
+          <button class="tab-btn" onclick="switchTab('file')">Subir archivo</button>
+        </div>
+        <div class="tab-content active" id="tab-url">
+          <div class="form-group"><label class="form-label">URL</label>
+            <input type="text" class="form-input" id="docUrl" placeholder="https://company.atlassian.net/wiki/..."/></div>
+          <div class="form-group"><label class="form-label">Título <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0">(opcional)</span></label>
+            <input type="text" class="form-input" id="docTitle" placeholder="Arquitectura del sistema"/></div>
+          <button class="btn btn-primary" onclick="addDocUrl()">+ Agregar URL</button>
+        </div>
+        <div class="tab-content" id="tab-file">
+          <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+            ondragover="event.preventDefault();this.classList.add('dragover')"
+            ondragleave="this.classList.remove('dragover')" ondrop="handleFileDrop(event)">
+            <div style="font-size:32px;margin-bottom:12px">⬆</div>
+            <div style="font-size:14px;font-weight:500">Arrastra archivos o haz clic para explorar</div>
+            <div style="font-size:13px;margin-top:6px">Soporta .md, .txt, .pdf, .docx, .json, .html y más</div>
+          </div>
+          <input type="file" id="fileInput" multiple onchange="handleFileInput(event)"/>
+          <button class="btn btn-primary" id="uploadBtn" onclick="uploadFiles()" disabled>Subir archivos</button>
+          <div id="selectedFiles" style="margin-top:12px;font-size:12px;color:var(--muted)"></div>
+        </div>
+        <div style="margin-top:24px">
+          <div class="nav-label" style="padding:0 0 8px">Fuentes indexadas</div>
+          <div id="docItems"><div style="font-size:13px;color:var(--muted);text-align:center;padding:24px 0">Sin documentación</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS — all users -->
+    <div class="panel" id="panel-status">
+      <div class="panel-inner">
+        <div class="panel-title">Estado del sistema</div>
+        <div class="panel-sub">Información del repositorio y documentación indexada</div>
+        <div class="status-card">
+          <div class="status-card-header">
+            <span style="font-size:14px;font-weight:500">Repositorio</span>
+            <span class="status-badge badge-idle" id="statusBadge">IDLE</span>
+          </div>
+          <div id="statusRepoUrl" style="font-family:var(--mono);font-size:12px;color:var(--muted);word-break:break-all;margin-bottom:12px">Sin repositorio configurado</div>
+          <div class="progress-bar"><div class="progress-fill" id="statusProgress" style="width:0%"></div></div>
+          <div class="stat-row"><span>Chunks indexados</span><span class="stat-val" id="statusChunks">0 / 0</span></div>
+        </div>
+        <div style="margin-top:20px">
+          <div class="nav-label" style="padding:0 0 8px">Documentación disponible</div>
+          <div id="statusDocItems"><div style="font-size:13px;color:var(--muted);padding:12px 0">Cargando...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT — all users -->
+    <div class="panel" id="panel-chat">
+      <div class="chat-wrapper">
+        <div class="chat-messages" id="chatMessages">
+          <div class="empty-state" id="chatEmpty">
+            <div class="empty-icon">◎</div>
+            <div class="empty-title">Pregunta lo que necesites sobre el código</div>
+            <div class="empty-sub">El asistente usa el repositorio y la documentación indexada para responder</div>
+          </div>
+        </div>
+        <div class="chat-footer">
+          <div class="chat-input-row">
+            <textarea id="chatInput" rows="1" placeholder="¿Cómo funciona el proceso de autenticación?"
+              onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
+          </div>
+          <div class="chat-meta">
+            <span>Contexto: <select id="topKSelect">
+              <option value="5">5 chunks</option><option value="10" selected>10 chunks</option><option value="20">20 chunks</option>
+            </select></span>
+            <button onclick="clearChat()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--font)">Limpiar chat</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_HOST = (window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1')
+  ? 'http://localhost:8080'
+  : 'http://'+window.location.hostname+':8080';
+const API = API_HOST+'/api';
+
+let currentToken=null, currentRole=null;
+const convId='ui-'+Date.now();
+let selectedFiles=[], statusInterval=null, chatEmpty=true;
+
+async function doLogin(){
+  const token=document.getElementById('tokenInput').value.trim();
+  if(!token)return;
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true; btn.textContent='Verificando...';
+  document.getElementById('loginError').style.display='none';
+  try{
+    const res=await fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
+    const data=await res.json();
+    if(!data.success)throw new Error(data.message);
+    currentToken=token; currentRole=data.data.role;
+    setupApp();
+  }catch(e){
+    document.getElementById('loginError').style.display='block';
+    btn.disabled=false; btn.textContent='Ingresar';
+  }
+}
+
+function doLogout(){
+  currentToken=null; currentRole=null;
+  if(statusInterval)clearInterval(statusInterval);
+  document.getElementById('appScreen').classList.remove('visible');
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('tokenInput').value='';
+  document.getElementById('loginBtn').disabled=false;
+  document.getElementById('loginBtn').textContent='Ingresar';
+}
+
+function authH(){return{'Content-Type':'application/json','Authorization':'Bearer '+currentToken};}
+
+function setupApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appScreen').classList.add('visible');
+  const badge=document.getElementById('roleBadge');
+  badge.textContent=currentRole;
+  badge.className='role-badge '+(currentRole==='ADMIN'?'admin':'user');
+  if(currentRole==='ADMIN'){
+    document.querySelectorAll('.admin-only').forEach(el=>el.classList.remove('hidden'));
+    showPanel('repo');
+  }else{
+    showPanel('chat');
+  }
+  pollRepoStatus();
+  startStatusPolling();
+  loadDocs();
+}
+
+function showPanel(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  const nb=document.getElementById('nav-'+name);
+  if(nb)nb.classList.add('active');
+  if(name==='docs'||name==='status')loadDocs();
+  if(name==='status')pollRepoStatus();
+}
+
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+type;
+  clearTimeout(t._tid); t._tid=setTimeout(()=>t.classList.remove('show'),3400);
+}
+
+async function startRepoIndexing(){
+  const url=document.getElementById('repoUrl').value.trim();
+  const path=document.getElementById('repoPath').value.trim();
+  if(!url){toast('Introduce la URL del repositorio','error');return;}
+  const btn=document.getElementById('cloneBtn');
+  btn.disabled=true; btn.textContent='Iniciando...';
+  try{
+    const res=await fetch(API+'/repo/set',{method:'POST',headers:authH(),body:JSON.stringify({repoUrl:url,localPath:path||null})});
+    const data=await res.json();
+    if(!data.success)throw new Error(data.message);
+    toast('¡Indexación iniciada!','success');
+    document.getElementById('repoStatusCard').style.display='block';
+    startStatusPolling();
+  }catch(e){toast(e.message,'error');btn.disabled=false;btn.textContent='↓ Clonar e Indexar';}
+}
+
+function startStatusPolling(){
+  if(statusInterval)clearInterval(statusInterval);
+  statusInterval=setInterval(pollRepoStatus,2500);
+}
+
+async function pollRepoStatus(){
+  try{
+    const res=await fetch(API+'/repo/status',{headers:{'Authorization':'Bearer '+currentToken}});
+    if(!res.ok)return;
+    const data=await res.json();
+    const s=data.data; if(!s)return;
+    // Admin repo panel
+    const badge=document.getElementById('repoBadge');
+    if(badge){
+      badge.textContent=s.status; badge.className='status-badge badge-'+s.status.toLowerCase();
+      document.getElementById('repoUrlDisplay').textContent=s.repoUrl||'';
+      const pct=s.totalChunks>0?Math.round(s.indexedChunks/s.totalChunks*100):0;
+      const bar=document.getElementById('repoProgress');
+      bar.style.width=pct+'%'; if(s.status==='READY')bar.classList.add('done');
+      document.getElementById('repoChunks').textContent=s.indexedChunks+' / '+s.totalChunks;
+      const err=document.getElementById('repoErrMsg');
+      if(s.errorMessage){err.textContent=s.errorMessage;err.style.display='block';}
+      const btn=document.getElementById('cloneBtn');
+      if(btn&&(s.status==='READY'||s.status==='ERROR'||s.status==='IDLE')){btn.disabled=false;btn.textContent='↓ Clonar e Indexar';}
+      if(s.status==='READY'||s.status==='ERROR')clearInterval(statusInterval);
+    }
+    // Status panel
+    const sb=document.getElementById('statusBadge');
+    if(sb){
+      sb.textContent=s.status; sb.className='status-badge badge-'+s.status.toLowerCase();
+      document.getElementById('statusRepoUrl').textContent=s.repoUrl||'Sin repositorio configurado';
+      const pct2=s.totalChunks>0?Math.round(s.indexedChunks/s.totalChunks*100):0;
+      document.getElementById('statusProgress').style.width=pct2+'%';
+      document.getElementById('statusChunks').textContent=s.indexedChunks+' / '+s.totalChunks;
+    }
+    // Global dot
+    const dot=document.getElementById('globalDot'),label=document.getElementById('globalStatus');
+    const map={IDLE:['','Inactivo'],CLONING:['working','Clonando...'],INDEXING:['working','Indexando...'],READY:['ready','Listo'],ERROR:['error','Error']};
+    const [cls,txt]=map[s.status]||['',s.status];
+    dot.className='status-dot '+cls; label.textContent=txt;
+  }catch(e){}
+}
+
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&name==='url')||(i===1&&name==='file')));
+  document.getElementById('tab-url').classList.toggle('active',name==='url');
+  document.getElementById('tab-file').classList.toggle('active',name==='file');
+}
+
+async function addDocUrl(){
+  const url=document.getElementById('docUrl').value.trim();
+  const title=document.getElementById('docTitle').value.trim();
+  if(!url){toast('Introduce una URL','error');return;}
+  try{
+    const res=await fetch(API+'/docs/url',{method:'POST',headers:authH(),body:JSON.stringify({url,title})});
+    const data=await res.json();
+    if(!data.success)throw new Error(data.message);
+    toast('URL agregada','success');
+    document.getElementById('docUrl').value=''; document.getElementById('docTitle').value='';
+    loadDocs();
+  }catch(e){toast(e.message,'error');}
+}
+
+function handleFileDrop(e){e.preventDefault();document.getElementById('uploadZone').classList.remove('dragover');selectedFiles=Array.from(e.dataTransfer.files);updateFileList();}
+function handleFileInput(e){selectedFiles=Array.from(e.target.files);updateFileList();}
+function updateFileList(){const btn=document.getElementById('uploadBtn');btn.disabled=!selectedFiles.length;document.getElementById('selectedFiles').textContent=selectedFiles.length?selectedFiles.map(f=>f.name).join(', '):'';}
+
+async function uploadFiles(){
+  if(!selectedFiles.length)return;
+  const btn=document.getElementById('uploadBtn');btn.disabled=true;btn.textContent='Subiendo...';
+  let ok=0;
+  for(const file of selectedFiles){
+    try{const form=new FormData();form.append('file',file);const res=await fetch(API+'/docs/file',{method:'POST',headers:{'Authorization':'Bearer '+currentToken},body:form});const data=await res.json();if(data.success)ok++;}catch(e){}
+  }
+  toast(ok+' archivo(s) subido(s)','success');
+  selectedFiles=[];document.getElementById('fileInput').value='';updateFileList();btn.textContent='Subir archivos';loadDocs();
+}
+
+async function loadDocs(){
+  try{
+    const res=await fetch(API+'/docs',{headers:{'Authorization':'Bearer '+currentToken}});
+    const data=await res.json();
+    const sources=data.data?.sources||[];
+    renderDocs(sources,'docItems',currentRole==='ADMIN');
+    renderDocs(sources,'statusDocItems',false);
+  }catch(e){}
+}
+
+function renderDocs(sources,containerId,showDelete){
+  const el=document.getElementById(containerId);if(!el)return;
+  if(!sources.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:24px 0">Sin documentación agregada</div>';return;}
+  el.innerHTML=sources.map(s=>`
+    <div class="doc-item">
+      <div class="doc-icon ${s.type==='URL'?'url':'file'}">${s.type==='URL'?'⬡':'◈'}</div>
+      <div class="doc-info"><div class="doc-name">${esc(s.title)}</div><div class="doc-src">${esc(s.source)}</div></div>
+      <span class="doc-status st-${s.status.toLowerCase()}">${s.status}</span>
+      ${showDelete?`<button onclick="removeDoc('${s.id}')" class="btn btn-danger" style="padding:5px 10px;font-size:12px;margin-left:6px">✕</button>`:''}
+    </div>`).join('');
+}
+
+async function removeDoc(id){
+  try{await fetch(API+'/docs/'+id,{method:'DELETE',headers:{'Authorization':'Bearer '+currentToken}});loadDocs();}
+  catch(e){toast('Error al eliminar','error');}
+}
+
+async function sendMessage(){
+  const input=document.getElementById('chatInput');
+  const msg=input.value.trim();if(!msg)return;
+  input.value='';autoResize(input);
+  if(chatEmpty){document.getElementById('chatEmpty').remove();chatEmpty=false;}
+  appendMsg('user',msg,[],null);
+  const tid=appendTyping();
+  document.getElementById('sendBtn').disabled=true;
+  const topK=parseInt(document.getElementById('topKSelect').value);
+  try{
+    const res=await fetch(API+'/chat',{method:'POST',headers:{...authH(),'X-Conversation-Id':convId},body:JSON.stringify({message:msg,topK})});
+    const data=await res.json();
+    removeTyping(tid);
+    if(!data.success)throw new Error(data.message);
+    const r=data.data;appendMsg('assistant',r.answer,r.sources||[],r.timestamp);
+  }catch(e){removeTyping(tid);appendMsg('assistant','⚠ Error: '+e.message,[],null);}
+  finally{document.getElementById('sendBtn').disabled=false;input.focus();}
+}
+
+function appendMsg(role,text,sources,ts){
+  const c=document.getElementById('chatMessages');
+  const time=ts?new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+  const srcs=sources.length?`<div class="msg-sources">${sources.slice(0,6).map(s=>`<span class="source-chip" title="${esc(s.path)}">${esc(shortPath(s.path))}</span>`).join('')}</div>`:'';
+  const div=document.createElement('div');div.className='msg '+role;
+  div.innerHTML=`<div class="msg-avatar">${role==='user'?'Tú':'IA'}</div><div class="msg-body"><div class="msg-bubble">${esc(text)}</div>${srcs}${time?`<div class="msg-time">${time}</div>`:''}</div>`;
+  c.appendChild(div);c.scrollTop=c.scrollHeight;
+}
+function appendTyping(){const id='t'+Date.now();const c=document.getElementById('chatMessages');const d=document.createElement('div');d.className='msg assistant';d.id=id;d.innerHTML='<div class="msg-avatar">IA</div><div class="msg-body"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';c.appendChild(d);c.scrollTop=c.scrollHeight;return id;}
+function removeTyping(id){const el=document.getElementById(id);if(el)el.remove();}
+function clearChat(){const c=document.getElementById('chatMessages');c.innerHTML='<div class="empty-state" id="chatEmpty"><div class="empty-icon">◎</div><div class="empty-title">Pregunta lo que necesites sobre el código</div><div class="empty-sub">El asistente usa el repositorio y la documentación indexada para responder</div></div>';chatEmpty=true;fetch(API+'/chat/history/'+convId,{method:'DELETE',headers:{'Authorization':'Bearer '+currentToken}}).catch(()=>{});}
+function handleChatKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,140)+'px';}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function shortPath(p){const parts=p.split(/[/\\]/);return parts.length>2?'…/'+parts.slice(-2).join('/'):p;}
+</script>
+</body>
+</html>
