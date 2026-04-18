@@ -176,7 +176,7 @@ public class QdrantClient {
       JsonNode payload = r.has("payload") ? r.get("payload") : null;
       hits.add(new SearchHit(id, score, payload));
     }
-    System.out.println("🔍 Search results: " + hits.size() + (sourceType != null ? " (filter: " + sourceType + ")" : " (no filter)"));
+    System.out.println("Search results: " + hits.size() + (sourceType != null ? " (filter: " + sourceType + ")" : " (no filter)"));
     return hits;
   }
 

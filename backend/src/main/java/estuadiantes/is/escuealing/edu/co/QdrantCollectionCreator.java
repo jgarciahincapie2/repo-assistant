@@ -41,11 +41,11 @@ public class QdrantCollectionCreator {
     HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
     if (response.statusCode() == 200) {
-      System.out.println("✅ Colección creada exitosamente: " + collectionName);
+      System.out.println("Colección creada exitosamente: " + collectionName);
     } else if (response.statusCode() == 409) {
-      System.out.println("ℹ️ La colección ya existe: " + collectionName);
+      System.out.println("La colección ya existe: " + collectionName);
     } else {
-      throw new RuntimeException("❌ Error creando colección: " + response.body());
+      throw new RuntimeException("Error creando colección: " + response.body());
     }
   }
 

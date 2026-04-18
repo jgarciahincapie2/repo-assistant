@@ -82,7 +82,7 @@ public class LLMServiceOllama {
               "- Menciona siempre el archivo (path) cuando hagas referencia a código.\n" +
               "- Responde en español, de forma clara y técnica.";
 
-      System.out.println("📤 model=" + modelName +
+      System.out.println("model=" + modelName +
           " | repo_chunks=" + repoCount + " | doc_chunks=" + docCount);
 
       ObjectNode body = mapper.createObjectNode();
@@ -116,9 +116,9 @@ public class LLMServiceOllama {
           .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(body)))
           .build();
 
-      System.out.println("⏳ Waiting for model...");
+      System.out.println("Waiting for model...");
       HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
-      System.out.println("📥 Status: " + resp.statusCode());
+      System.out.println("Status: " + resp.statusCode());
 
       if (resp.statusCode() / 100 != 2)
         throw new RuntimeException("LLM fail: " + resp.body());
@@ -126,7 +126,7 @@ public class LLMServiceOllama {
       JsonNode root = mapper.readTree(resp.body());
       if (root.has("message") && root.get("message").has("content")) {
         String answer = root.get("message").get("content").asText().trim();
-        System.out.println("✅ Answer: " + answer.length() + " chars");
+        System.out.println("Answer: " + answer.length() + " chars");
         return answer.isEmpty() ? "El modelo no generó respuesta. Intenta reformular." : answer;
       }
       if (root.has("response")) return root.get("response").asText().trim();

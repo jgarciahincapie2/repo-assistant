@@ -107,7 +107,7 @@ public class IndexingService {
                 CompletableFuture.allOf(tasks).join();
                 executor.shutdown();
                 repoStatus.set("READY");
-                System.out.println("✅ Indexing complete: " + indexedChunks.get() + " chunks");
+                System.out.println("Indexing complete: " + indexedChunks.get() + " chunks");
 
             } catch (Exception e) {
                 repoStatus.set("ERROR");
@@ -131,15 +131,15 @@ public class IndexingService {
         CompletableFuture.runAsync(() -> {
             updateDocStatus(id, "INDEXING");
             try {
-                System.out.println("🌐 Fetching URL: " + url);
+                System.out.println("Fetching URL: " + url);
                 String content = parser.fetchAndExtract(url);
-                System.out.println("📄 Extracted " + content.length() + " chars from URL");
+                System.out.println("Extracted " + content.length() + " chars from URL");
                 indexTextContent(id, resolvedTitle, content, "URL");
                 updateDocStatus(id, "INDEXED");
-                System.out.println("✅ URL indexed: " + url);
-            } catch (Exception e) {
+                System.out.println("URL indexed: " + url);
+            } catch (Exception e)
                 updateDocStatus(id, "ERROR");
-                System.err.println("❌ Error indexing URL " + url + ": " + e.getMessage());
+                System.err.println("Error indexing URL " + url + ": " + e.getMessage());
             }
         });
         return doc;
@@ -170,10 +170,10 @@ public class IndexingService {
                 }
                 indexTextContent(id, title, text, "FILE");
                 updateDocStatus(id, "INDEXED");
-                System.out.println("✅ File indexed: " + title);
+                System.out.println("File indexed: " + title);
             } catch (Exception e) {
                 updateDocStatus(id, "ERROR");
-                System.err.println("❌ Error indexing file " + title + ": " + e.getMessage());
+                System.err.println("Error indexing file " + title + ": " + e.getMessage());
             }
         });
         return doc;
@@ -218,7 +218,7 @@ public class IndexingService {
             if (end == len) break;
             start = Math.max(0, end - overlap);
         }
-        System.out.println("📦 Indexed " + count + " chunks for: " + title);
+        System.out.println("Indexed " + count + " chunks for: " + title);
     }
 
     private void updateDocStatus(String id, String status) {

@@ -21,7 +21,7 @@ public class Retriever {
     float[] qvec = embed.embed(question);
     List<QdrantClient.SearchHit> hits = qdrant.search(qvec, k);
 
-    System.out.println("🔍 Resultados de búsqueda: " + hits.size());
+    System.out.println("Resultados de búsqueda: " + hits.size());
     List<String> contexts = new ArrayList<>();
 
     for (var h : hits) {
@@ -33,7 +33,7 @@ public class Retriever {
       }
     }
 
-    System.out.println("🧩 Contextos útiles: " + contexts.size());
+    System.out.println("Contextos útiles: " + contexts.size());
     return contexts;
   }
 }

@@ -54,7 +54,7 @@ public class ChatService {
         List<QdrantClient.SearchHit> hitsToUse;
 
         if (isCodeQuestion && repoCount < allHits.size() / 2 && !repoHits.isEmpty()) {
-            System.out.println("🔀 Code question detected, prioritizing REPO hits");
+            System.out.println("Code question detected, prioritizing REPO hits");
             // Mezclar: repo hits primero, luego completar con all hits si hacen falta
             hitsToUse = new ArrayList<>(repoHits);
             for (var h : allHits) {
@@ -92,7 +92,7 @@ public class ChatService {
             sources.add(new SourceReference(path + " [" + srcType + "]", hit.score, snippet));
         }
 
-        System.out.println("✅ Final context chunks: " + contexts.size() +
+        System.out.println("Final context chunks: " + contexts.size() +
             " | code question: " + isCodeQuestion);
 
         String answer;
